@@ -65,6 +65,7 @@ import { customComponentRegistry } from "@alliance/sharedweb/forms/components";
 import { FORM_BUILDER_PREVIEW_USER } from "../lib/testData";
 import { AggregateBuilder } from "./AggregateBuilder";
 import { OutputBuilder } from "./OutputBuilder";
+import { ShareableTextBuilder } from "./ShareableTextBuilder";
 import { useToast } from "@alliance/sharedweb/ui/ToastProvider";
 import {
   CustomValidatorDraft,
@@ -147,6 +148,7 @@ interface FormBuilderProps {
   setFormId: (formId: number) => void;
   actionName?: string;
   generalUpdateName?: string;
+  legacyShareTextTemplate?: string | null;
 }
 
 const ensureSchemaViews = (schema: FormSchema): FormSchema => ({
@@ -168,6 +170,22 @@ const ensurePages = (schema: FormSchema): FormSchema => {
     };
   }
   return withOutputViews;
+};
+
+const applyLegacyShareTextTemplate = (
+  schema: FormSchema,
+  legacyShareTextTemplate?: string | null,
+): FormSchema => {
+  if (
+    schema.shareableTextTemplate?.trim() ||
+    !legacyShareTextTemplate?.trim()
+  ) {
+    return schema;
+  }
+  return {
+    ...schema,
+    shareableTextTemplate: legacyShareTextTemplate,
+  };
 };
 
 const buildValueCounts = (values: string[]) => {
@@ -332,24 +350,28 @@ export function FormBuilder({
   setFormId,
   actionName,
   generalUpdateName,
+  legacyShareTextTemplate,
 }: FormBuilderProps) {
   const buildInitialSchema = () =>
-    initialSchema
-      ? ensurePages(initialSchema)
-      : {
-          title: !!actionName ? actionName + " form" : "Untitled Form",
-          description: "",
-          pages: [
-            {
-              id: "page-1",
-              title: "Page 1",
-              fields: [],
-            },
-          ],
-          submit: { label: "Complete" },
-          outputViews: [],
-          aggregateViews: [],
-        };
+    applyLegacyShareTextTemplate(
+      initialSchema
+        ? ensurePages(initialSchema)
+        : {
+            title: !!actionName ? actionName + " form" : "Untitled Form",
+            description: "",
+            pages: [
+              {
+                id: "page-1",
+                title: "Page 1",
+                fields: [],
+              },
+            ],
+            submit: { label: "Complete" },
+            outputViews: [],
+            aggregateViews: [],
+          },
+      legacyShareTextTemplate,
+    );
 
   const [schema, setSchema] = useState<FormSchema>(buildInitialSchema);
   const [lastSavedSchemaJSON, setLastSavedSchemaJSON] = useState<string>(() =>
@@ -362,7 +384,7 @@ export function FormBuilder({
   const activeEditor = searchParams.get("editor") ?? "form";
 
   const setActiveEditor = useCallback(
-    (editor: "form" | "outputs" | "aggregates") => {
+    (editor: "form" | "shareable" | "outputs" | "aggregates") => {
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set("editor", editor);
@@ -572,8 +594,9 @@ export function FormBuilder({
           // Convert the form entity back to FormSchema
           const form = response.data as any;
           if (form.schema) {
-            const nextSchema = ensurePages(
-              form.schema as unknown as FormSchema,
+            const nextSchema = applyLegacyShareTextTemplate(
+              ensurePages(form.schema as unknown as FormSchema),
+              legacyShareTextTemplate,
             );
             setSchema(nextSchema);
             setLastSavedSchemaJSON(JSON.stringify(nextSchema));
@@ -590,7 +613,7 @@ export function FormBuilder({
       .finally(() => {
         setIsLoading(false);
       });
-  }, [formId, initialSchema, generalUpdateName]);
+  }, [formId, initialSchema, generalUpdateName, legacyShareTextTemplate]);
 
   const addField = (kind: FieldKind, insertIndex?: number) => {
     const fieldId = `field-${Date.now()}`;
@@ -1842,7 +1865,19 @@ export function FormBuilder({
                     )}
                     onClick={() => setActiveEditor("form")}
                   >
-                    Form builder
+                    Form Builder
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      "px-3 py-2 rounded-md text-nowrap",
+                      activeEditor === "shareable"
+                        ? "bg-white shadow text-gray-900"
+                        : "text-gray-600",
+                    )}
+                    onClick={() => setActiveEditor("shareable")}
+                  >
+                    Shareable Text
                   </button>
                   <button
                     type="button"
@@ -1854,7 +1889,7 @@ export function FormBuilder({
                     )}
                     onClick={() => setActiveEditor("outputs")}
                   >
-                    Output views
+                    Output View
                   </button>
                   <button
                     type="button"
@@ -1866,7 +1901,7 @@ export function FormBuilder({
                     )}
                     onClick={() => setActiveEditor("aggregates")}
                   >
-                    Aggregate views
+                    Aggregate Views
                   </button>
                 </div>
               )}
@@ -2048,7 +2083,12 @@ export function FormBuilder({
             ref={contentScrollRef}
             className="flex-1 p-6 overflow-y-auto min-h-0"
           >
-            {activeEditor === "outputs" && !generalUpdateName ? (
+            {activeEditor === "shareable" && !generalUpdateName ? (
+              <ShareableTextBuilder
+                schema={schema}
+                onSchemaChange={updateSchema}
+              />
+            ) : activeEditor === "outputs" && !generalUpdateName ? (
               <OutputBuilder schema={schema} onSchemaChange={updateSchema} />
             ) : activeEditor === "aggregates" && !generalUpdateName ? (
               <AggregateBuilder schema={schema} onSchemaChange={updateSchema} />

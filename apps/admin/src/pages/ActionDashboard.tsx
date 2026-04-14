@@ -945,6 +945,10 @@ const ActionDashboard: React.FC = () => {
     return <div className="p-8">Loading action...</div>;
   }
 
+  const legacyShareTextTemplate = (
+    action as (typeof action & { shareTextTemplate?: string | null }) | null
+  )?.shareTextTemplate;
+
   return (
     <div className="flex flex-col h-full">
       <title>Action Dashboard</title>
@@ -1587,11 +1591,12 @@ const ActionDashboard: React.FC = () => {
               </div>
             )}
             {activeTab === "form" && action && (
-              <FormBuilder
-                formId={action.taskFormId}
-                setFormId={setTaskFormId}
-                actionName={action.name}
-              />
+            <FormBuilder
+              formId={action.taskFormId}
+              setFormId={setTaskFormId}
+              actionName={action.name}
+              legacyShareTextTemplate={legacyShareTextTemplate}
+            />
             )}
 
             {activeTab === "events" && action && (

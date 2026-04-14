@@ -1,13 +1,63 @@
 import type { FormResponseDto } from "../client/types.gen";
 import type { FormSchema } from "@alliance/common/forms/form-schema";
 
+const resolveAnswerValue = (value: unknown): string | null => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => resolveAnswerValue(entry))
+      .filter((entry): entry is string => Boolean(entry))
+      .join(", ");
+  }
+  if (typeof value === "object") {
+    const objectValue = value as { name?: string; key?: string };
+    if (objectValue.name || objectValue.key) {
+      return objectValue.name || objectValue.key || null;
+    }
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+};
+
+const findSchemaField = (schema: FormSchema, token: string) => {
+  const normalizedToken = token.trim().toLowerCase();
+  return schema.pages
+    .flatMap((page) => page.fields)
+    .find(
+      (field) =>
+        "id" in field &&
+        ((typeof field.id === "string" &&
+          field.id.trim().toLowerCase() === normalizedToken) ||
+          ("label" in field &&
+            typeof field.label === "string" &&
+            field.label.trim().toLowerCase() === normalizedToken)),
+    );
+};
+
+export function getShareableTextTemplate(
+  schemaLike: FormSchema | Record<string, unknown> | null | undefined,
+): string | undefined {
+  if (!schemaLike || typeof schemaLike !== "object") {
+    return undefined;
+  }
+  const template = (schemaLike as FormSchema).shareableTextTemplate;
+  return typeof template === "string" ? template : undefined;
+}
+
 /**
  * Interpolates a share text template using form response answers.
  *
- * Template syntax: ${field label} — case-insensitive match against form field labels.
- * Example: "Donated ${amount} to Helen Keller International"
+ * Template syntax:
+ * - #{field-id}
+ * - ${field label}
  *
- * If a variable name doesn't match any field label, it is left as-is.
+ * If a variable name doesn't match a field, it is left as-is.
  */
 export function interpolateShareText(
   template: string,
@@ -16,20 +66,18 @@ export function interpolateShareText(
   const schema = formResponse.schemaSnapshot as unknown as FormSchema;
   if (!schema?.pages) return template;
 
-  const allFields = schema.pages.flatMap((page) => page.fields);
+  const replaceToken = (match: string, token: string) => {
+    const field = findSchemaField(schema, token);
+    if (!field || !("id" in field) || typeof field.id !== "string") {
+      return match;
+    }
+    const resolved = resolveAnswerValue(formResponse.answers[field.id]);
+    return resolved ?? match;
+  };
 
-  return template.replace(/\$\{([^}]+)\}/g, (match, varName: string) => {
-    const normalized = varName.trim().toLowerCase();
-    const field = allFields.find(
-      (f) =>
-        "label" in f &&
-        typeof f.label === "string" &&
-        f.label.toLowerCase() === normalized,
-    );
-    if (!field || !("id" in field)) return match;
-    const value = formResponse.answers[(field as { id: string }).id];
-    return value !== undefined && value !== null ? String(value) : match;
-  });
+  return template
+    .replace(/#\{([^}]+)\}/g, replaceToken)
+    .replace(/\$\{([^}]+)\}/g, replaceToken);
 }
 
 export function buildShareText({

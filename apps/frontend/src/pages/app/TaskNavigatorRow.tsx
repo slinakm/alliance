@@ -13,7 +13,10 @@ import type { ActionWithAwayStatus } from "@alliance/shared/lib/actionUtils";
 import { useAuth } from "../../lib/AuthContext";
 import { getBaseUrl } from "@alliance/sharedweb/lib/config";
 import { useCompletedTaskForm } from "@alliance/shared/lib/actionTaskPanelCompleted";
-import { buildShareText } from "@alliance/shared/lib/shareText";
+import {
+  buildShareText,
+  getShareableTextTemplate,
+} from "@alliance/shared/lib/shareText";
 
 const ICON_SIZE = 16;
 
@@ -159,13 +162,20 @@ export function TaskNavigatorCompletedRow({
 }) {
   const [copied, setCopied] = useState(false);
   const { user } = useAuth();
-  const formResponse = useCompletedTaskForm(action, !!action.shareTextTemplate);
+  const legacyShareTextTemplate = (
+    action as ActionDto & { shareTextTemplate?: string | null }
+  ).shareTextTemplate;
+  const formResponse = useCompletedTaskForm(action, true);
+  const shareTemplate =
+    getShareableTextTemplate(
+      formResponse?.schemaSnapshot as Record<string, unknown> | undefined,
+    ) ?? legacyShareTextTemplate;
 
   const handleShare = () => {
     const ref = user?.referralCode ? `?ref=${user.referralCode}` : "";
     const url = `${getBaseUrl()}/actions/${action.id}${ref}`;
     const text = buildShareText({
-      template: action.shareTextTemplate,
+      template: shareTemplate,
       formResponse,
       url,
     });

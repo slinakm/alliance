@@ -19,7 +19,10 @@ import {
 } from "@alliance/shared/lib/actionPageTaskPanel";
 import { taskHeaders } from "@alliance/shared/lib/copy";
 import { getBaseUrl } from "@alliance/sharedweb/lib/config";
-import { buildShareText } from "@alliance/shared/lib/shareText";
+import {
+  buildShareText,
+  getShareableTextTemplate,
+} from "@alliance/shared/lib/shareText";
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   console.error(error);
@@ -115,17 +118,24 @@ const ActionPageTaskPanel = () => {
     isAuthenticated,
     hasRefCode: !!refCode,
   });
+  const legacyShareTextTemplate = (
+    action as typeof action & { shareTextTemplate?: string | null }
+  ).shareTextTemplate;
   const resolvedUserRelation = userRelation ?? "none";
   const formResponse = useCompletedTaskForm(
     action,
-    shouldLoadCompletedTaskFormByState[state],
+    shouldLoadCompletedTaskFormByState[state] || !!legacyShareTextTemplate,
   );
+  const shareTemplate =
+    getShareableTextTemplate(
+      formResponse?.schemaSnapshot as Record<string, unknown> | undefined,
+    ) ?? legacyShareTextTemplate;
 
   const handleShareCopy = () => {
     const ref = user?.referralCode ? `?ref=${user.referralCode}` : "";
     const url = `${getBaseUrl()}/actions/${action.id}${ref}`;
     const text = buildShareText({
-      template: action.shareTextTemplate,
+      template: shareTemplate,
       formResponse,
       url,
     });
