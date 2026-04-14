@@ -310,6 +310,14 @@ const ActionForm: React.FC<ActionFormProps> = ({
         show: (f) => !!f.customStatType && f.customStatType !== "none",
       },
       {
+        name: "shareTextTemplate",
+        label: "Share Text Template",
+        type: "text",
+        section: "settings",
+        helpText:
+          'Optional text copied when a member shares this action. Use ${field label} to insert form response values, e.g. "Donated ${amount} to Helen Keller International".',
+      },
+      {
         name: "publicOnly",
         label: "Public Only",
         type: "checkbox",

@@ -12,6 +12,8 @@ import type { ActionDto, FollowUpForm } from "@alliance/shared/client";
 import type { ActionWithAwayStatus } from "@alliance/shared/lib/actionUtils";
 import { useAuth } from "../../lib/AuthContext";
 import { getBaseUrl } from "@alliance/sharedweb/lib/config";
+import { useCompletedTaskForm } from "@alliance/shared/lib/actionTaskPanelCompleted";
+import { buildShareText } from "@alliance/shared/lib/shareText";
 
 const ICON_SIZE = 16;
 
@@ -157,12 +159,17 @@ export function TaskNavigatorCompletedRow({
 }) {
   const [copied, setCopied] = useState(false);
   const { user } = useAuth();
+  const formResponse = useCompletedTaskForm(action, !!action.shareTextTemplate);
 
   const handleShare = () => {
     const ref = user?.referralCode ? `?ref=${user.referralCode}` : "";
-    navigator.clipboard.writeText(
-      `${getBaseUrl()}/actions/${action.id}${ref}`,
-    );
+    const url = `${getBaseUrl()}/actions/${action.id}${ref}`;
+    const text = buildShareText({
+      template: action.shareTextTemplate,
+      formResponse,
+      url,
+    });
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

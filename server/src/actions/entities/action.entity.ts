@@ -279,6 +279,14 @@ export class Action {
   @IsOptional()
   customStatGoal?: number;
 
+  @Column({ nullable: true })
+  @ApiPropertyOptional({
+    description:
+      'Template for the share text when a member completes this action. Use ${field label} to interpolate form response values.',
+  })
+  @IsOptional()
+  shareTextTemplate?: string;
+
   // Relations
 
   @OneToMany(() => ActionEvent, (event) => event.action)

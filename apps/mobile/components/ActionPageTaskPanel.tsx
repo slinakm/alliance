@@ -22,6 +22,7 @@ import Text, { FontWeight } from "./system/Text";
 import ActionTaskPanel from "./ActionTaskPanel";
 import { useAuth } from "../lib/AuthContext";
 import * as Clipboard from "expo-clipboard";
+import { buildShareText } from "@alliance/shared/lib/shareText";
 
 export interface ActionPageTaskPanelProps {
   action: ActionDto;
@@ -114,9 +115,13 @@ const ActionPageTaskPanel = ({
 
   const handleShareCopy = async () => {
     const ref = user?.referralCode ? `?ref=${user.referralCode}` : "";
-    await Clipboard.setStringAsync(
-      `${getBaseUrl()}/actions/${action.id}${ref}`,
-    );
+    const url = `${getBaseUrl()}/actions/${action.id}${ref}`;
+    const text = buildShareText({
+      template: action.shareTextTemplate,
+      formResponse,
+      url,
+    });
+    await Clipboard.setStringAsync(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

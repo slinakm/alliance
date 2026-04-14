@@ -19,6 +19,7 @@ import {
 } from "@alliance/shared/lib/actionPageTaskPanel";
 import { taskHeaders } from "@alliance/shared/lib/copy";
 import { getBaseUrl } from "@alliance/sharedweb/lib/config";
+import { buildShareText } from "@alliance/shared/lib/shareText";
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   console.error(error);
@@ -125,9 +126,13 @@ const ActionPageTaskPanel = () => {
 
   const handleShareCopy = () => {
     const ref = user?.referralCode ? `?ref=${user.referralCode}` : "";
-    navigator.clipboard.writeText(
-      `${getBaseUrl()}/actions/${action.id}${ref}`,
-    );
+    const url = `${getBaseUrl()}/actions/${action.id}${ref}`;
+    const text = buildShareText({
+      template: action.shareTextTemplate,
+      formResponse,
+      url,
+    });
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
