@@ -3,15 +3,20 @@ import Button from "@alliance/sharedweb/ui/Button";
 import Card from "@alliance/sharedweb/ui/Card";
 import { CardStyle } from "@alliance/shared/styles/card";
 import ReactMarkdown from "react-markdown";
+import { Link } from "react-router";
 
 interface ActionTaskPanelActivityProps {
   action: ActionDto;
   onCompleteAction: () => void;
+  disabled?: boolean;
+  createAccountHref?: string;
 }
 
 const ActionTaskPanelActivity = ({
   action,
   onCompleteAction,
+  disabled = false,
+  createAccountHref,
 }: ActionTaskPanelActivityProps) => {
   return (
     <Card style={CardStyle.White}>
@@ -24,7 +29,18 @@ const ActionTaskPanelActivity = ({
           <ReactMarkdown>{action.taskContents}</ReactMarkdown>
         </div>
         <div className="flex justify-end">
-          <Button onClick={onCompleteAction}>Mark Complete</Button>
+          {createAccountHref && !disabled ? (
+            <Link
+              to={createAccountHref}
+              className="inline-flex items-center rounded-full bg-green px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green/90"
+            >
+              Create an account to submit
+            </Link>
+          ) : (
+            <Button onClick={onCompleteAction} disabled={disabled}>
+              {disabled ? "Completed" : "Mark Complete"}
+            </Button>
+          )}
         </div>
       </div>
     </Card>
