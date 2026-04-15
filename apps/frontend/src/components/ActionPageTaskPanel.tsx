@@ -3,7 +3,7 @@ import { useCompletedTaskForm } from "@alliance/shared/lib/actionTaskPanelComple
 import Card from "@alliance/sharedweb/ui/Card";
 import CheckIcon from "@alliance/sharedweb/ui/icons/CheckIcon";
 import { ArrowRight, Link2 } from "lucide-react";
-import { isRouteErrorResponse, useOutletContext } from "react-router";
+import { isRouteErrorResponse, useOutletContext, useSearchParams } from "react-router";
 import { Link } from "react-router";
 import { useState } from "react";
 import { Route } from "../../.react-router/types/src/components/+types/ActionPageTaskPanel";
@@ -54,14 +54,8 @@ const taskPanelHeaderByState: Record<
     <p>{taskHeaders.actionPage.externalOnly}</p>
   ),
   [ActionPageTaskPanelState.PublicOnly]: null,
-  [ActionPageTaskPanelState.NotAuthenticated]: (
-    <p>
-      <Link to="/login" className="text-green hover:underline">
-        Log in
-      </Link>{" "}
-      to complete this task.
-    </p>
-  ),
+  [ActionPageTaskPanelState.NotAuthenticated]: null, // overridden dynamically below
+  [ActionPageTaskPanelState.GuestRef]: null, // overridden dynamically below
   [ActionPageTaskPanelState.NotAssigned]: (
     <p>{taskHeaders.actionPage.notAssigned}</p>
   ),
@@ -111,12 +105,15 @@ const ActionPageTaskPanel = () => {
 
   const { user, isAuthenticated } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get("ref");
 
   const state = getActionPageTaskPanelState({
     action,
     userRelation,
     contractSigned: user?.hasActiveContract ?? false,
     isAuthenticated,
+    hasRefCode: !!refCode,
   });
   const resolvedUserRelation = userRelation ?? "none";
   const formResponse = useCompletedTaskForm(
@@ -137,6 +134,8 @@ const ActionPageTaskPanel = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const inviteHref = refCode ? `/invite?ref=${refCode}` : "/invite";
+
   const completedHeader = (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-x-3">
@@ -155,10 +154,44 @@ const ActionPageTaskPanel = () => {
     </div>
   );
 
-  const taskPanelHeader =
-    state === ActionPageTaskPanelState.Completed
-      ? completedHeader
-      : taskPanelHeaderByState[state];
+  const notAuthenticatedHeader = (
+    <p>
+      <Link to="/login" className="text-green hover:underline">
+        Log in
+      </Link>{" "}
+      to complete this task, or{" "}
+      <Link to={inviteHref} className="text-green hover:underline">
+        sign up
+      </Link>{" "}
+      to join the Alliance.
+    </p>
+  );
+
+  const guestRefHeader = (
+    <p>
+      You're previewing this action.{" "}
+      <Link to={inviteHref} className="text-green hover:underline">
+        Sign up
+      </Link>{" "}
+      or{" "}
+      <Link to="/login" className="text-green hover:underline">
+        log in
+      </Link>{" "}
+      to complete it and join the Alliance.
+    </p>
+  );
+
+  let taskPanelHeader: React.ReactNode;
+  if (state === ActionPageTaskPanelState.Completed) {
+    taskPanelHeader = completedHeader;
+  } else if (state === ActionPageTaskPanelState.NotAuthenticated) {
+    taskPanelHeader = notAuthenticatedHeader;
+  } else if (state === ActionPageTaskPanelState.GuestRef) {
+    taskPanelHeader = guestRefHeader;
+  } else {
+    taskPanelHeader = taskPanelHeaderByState[state];
+  }
+
   const { header: headerStyle, body: bodyStyle } = cardStylesForState(state);
 
   switch (state) {
@@ -166,6 +199,7 @@ const ActionPageTaskPanel = () => {
     case ActionPageTaskPanelState.Completed:
     case ActionPageTaskPanelState.PublicOnlyAuthenticated:
     case ActionPageTaskPanelState.NotAuthenticated:
+    case ActionPageTaskPanelState.GuestRef:
     case ActionPageTaskPanelState.NotAssigned:
     case ActionPageTaskPanelState.MemberActionClosed:
     case ActionPageTaskPanelState.OnboardingSignContractFirst:

@@ -39,13 +39,18 @@ const taskPanelTopByState: Record<ActionPageTaskPanelState, ReactNode> = {
   ),
   [ActionPageTaskPanelState.PublicOnly]: null,
   [ActionPageTaskPanelState.NotAuthenticated]: (
-    <View className="flex-row flex-wrap items-center">
+    <View className="flex-row flex-wrap items-center gap-x-1">
       <Link href="/auth/login">
         <Text className="text-green">Log in</Text>
       </Link>
-      <Text> to complete this task.</Text>
+      <Text>to complete this task, or</Text>
+      <Link href="/auth/signup">
+        <Text className="text-green">sign up</Text>
+      </Link>
+      <Text>to join the Alliance.</Text>
     </View>
   ),
+  [ActionPageTaskPanelState.GuestRef]: null,
   [ActionPageTaskPanelState.NotAssigned]: (
     <Text>{taskHeaders.actionPage.notAssigned}</Text>
   ),
@@ -164,6 +169,24 @@ const ActionPageTaskPanel = ({
     case ActionPageTaskPanelState.NotAssigned:
     case ActionPageTaskPanelState.MemberActionClosed:
     case ActionPageTaskPanelState.OnboardingSignContractFirst:
+      return (
+        <StackedCard
+          top={taskPanelHeader}
+          topCardStyle={headerStyle}
+          bottom={
+            <ActionTaskPanel
+              action={action}
+              scrollPageTo={scrollPageTo}
+              scrollToEnd={scrollToEnd}
+              disabled
+              formResponse={formResponse ?? undefined}
+              {...panelHandlers}
+            />
+          }
+          bottomCardStyle={bodyStyle}
+        />
+      );
+    case ActionPageTaskPanelState.GuestRef:
       return (
         <StackedCard
           top={taskPanelHeader}
