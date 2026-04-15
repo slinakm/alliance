@@ -18,6 +18,7 @@ import {
   getShareableTextTemplate,
 } from "@alliance/shared/lib/shareText";
 import { clipboardCopy } from "@alliance/shared/lib/copy";
+import ShareConfettiButton from "../../components/ShareConfettiButton";
 
 const ICON_SIZE = 16;
 
@@ -191,17 +192,14 @@ export function TaskNavigatorCompletedRow({
           {action.optional && "(Optional) "}
           {action.name}
         </Link>
-        <button
+        <ShareConfettiButton
           onClick={handleShare}
-          className="shrink-0 flex items-center gap-x-1 text-zinc-400 hover:text-zinc-600"
-        >
-          <Link2 size={12} />
-          <span className="text-xs">
-            {copied
-              ? clipboardCopy.copiedToClipboard
-              : clipboardCopy.share}
-          </span>
-        </button>
+          icon={Link2}
+          label={copied ? clipboardCopy.copiedToClipboard : clipboardCopy.share}
+          className="shrink-0 text-zinc-400 hover:text-zinc-600"
+          iconClassName="w-3 h-3"
+          labelClassName="text-xs"
+        />
       </div>
       <TaskNavigatorFollowUpRows
         forms={followUpForms}

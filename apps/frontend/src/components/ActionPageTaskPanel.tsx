@@ -23,6 +23,7 @@ import {
   buildShareText,
   getShareableTextTemplate,
 } from "@alliance/shared/lib/shareText";
+import ShareConfettiButton from "./ShareConfettiButton";
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   console.error(error);
@@ -148,17 +149,14 @@ const ActionPageTaskPanel = () => {
         <CheckIcon size="small" />
         <p>{taskHeaders.actionPage.completed}</p>
       </div>
-      <button
+      <ShareConfettiButton
         onClick={handleShareCopy}
-        className="flex items-center gap-x-1 text-zinc-500 hover:text-zinc-700"
-      >
-        <Link2 className="w-3.5 h-3.5" />
-        <span className="text-sm">
-          {copied
-            ? clipboardCopy.copiedToClipboard
-            : clipboardCopy.share}
-        </span>
-      </button>
+        icon={Link2}
+        label={copied ? clipboardCopy.copiedToClipboard : clipboardCopy.share}
+        className="text-zinc-500 hover:text-zinc-700"
+        iconClassName="w-3.5 h-3.5"
+        labelClassName="text-sm"
+      />
     </div>
   );
 
