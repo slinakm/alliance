@@ -50,6 +50,16 @@ export function getShareableTextTemplate(
   return typeof template === "string" ? template : undefined;
 }
 
+export function getDefaultShareableTextTemplate(
+  schemaLike: FormSchema | Record<string, unknown> | null | undefined,
+): string | undefined {
+  if (!schemaLike || typeof schemaLike !== "object") {
+    return undefined;
+  }
+  const template = (schemaLike as FormSchema).defaultShareableTextTemplate;
+  return typeof template === "string" ? template : undefined;
+}
+
 /**
  * Interpolates a share text template using form response answers.
  *

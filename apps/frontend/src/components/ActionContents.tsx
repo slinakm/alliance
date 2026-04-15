@@ -1,4 +1,5 @@
 import AppMarkdownWrapper from "@alliance/sharedweb/ui/AppMarkdownWrapper";
+import { tasksGetForm } from "@alliance/shared/client";
 import type { ProfileDto } from "@alliance/shared/client/types.gen";
 import {
   Link,
@@ -18,6 +19,7 @@ import { TaskPanelContext } from "./ActionPageTaskPanel";
 import Comments from "./Comments";
 import { shuffleWithSeed } from "@alliance/shared/forms/randomutils";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ExternalLinkIcon } from "lucide-react";
 import { getBaseUrl } from "@alliance/sharedweb/lib/config";
 import ActionCompletedBarWithInfo from "../pages/app/ActionCompletedBarWithInfo";
@@ -26,6 +28,7 @@ import { useLiveTaskFormAggregateViews } from "../lib/useLiveTaskFormAggregateVi
 import { useCompletedTaskForm } from "@alliance/shared/lib/actionTaskPanelCompleted";
 import {
   buildShareText,
+  getDefaultShareableTextTemplate,
   getShareableTextTemplate,
 } from "@alliance/shared/lib/shareText";
 import { clipboardCopy } from "@alliance/shared/lib/copy";
@@ -51,11 +54,31 @@ const ActionContents = () => {
     action as typeof action & { shareTextTemplate?: string | null }
   ).shareTextTemplate;
   const formResponse = useCompletedTaskForm(action, isCompleted);
+  const { data: taskForm } = useQuery({
+    queryKey: ["form", action.taskFormId],
+    queryFn: async () => {
+      const response = await tasksGetForm({
+        path: { id: action.taskFormId! },
+      });
+
+      if (!response.data) {
+        throw new Error(
+          (response.error as Error)?.message ??
+            "Unable to load form - please reload",
+        );
+      }
+
+      return response.data;
+    },
+    enabled: !isCompleted && action.taskFormId != null,
+  });
   const shareTemplate = isCompleted
     ? (getShareableTextTemplate(
         formResponse?.schemaSnapshot as Record<string, unknown> | undefined,
       ) ?? legacyShareTextTemplate)
-    : undefined;
+    : getDefaultShareableTextTemplate(
+        taskForm?.schema as Record<string, unknown> | undefined,
+      );
 
   useEffect(() => {
     if (location.hash === "#description") {
