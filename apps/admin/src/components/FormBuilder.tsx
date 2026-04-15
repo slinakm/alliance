@@ -156,6 +156,15 @@ const ensureSchemaViews = (schema: FormSchema): FormSchema => ({
   aggregateViews: schema.aggregateViews ?? [],
 });
 
+const shouldWarnAboutMissingCompletedShareText = (schema: FormSchema) =>
+  Boolean(
+    schema.defaultShareableTextTemplate?.trim() &&
+      !schema.shareableTextTemplate?.trim(),
+  );
+
+const missingCompletedShareTextWarning =
+  "Are you sure? You specified a default shareable text without specifying the shareable text for completed tasks. This means that when a user completes a task and tries to share the action, only the URL will be copied to their clipboard.";
+
 const ensurePages = (schema: FormSchema): FormSchema => {
   const withOutputViews = ensureSchemaViews(schema);
   if (
@@ -1038,7 +1047,9 @@ export function FormBuilder({
   useEffect(() => {
     if (navigationBlocker.state === "blocked") {
       const confirmExit = window.confirm(
-        "You have unsaved changes. Are you sure you want to leave this page?",
+        shouldWarnAboutMissingCompletedShareText(schema)
+          ? missingCompletedShareTextWarning
+          : "You have unsaved changes. Are you sure you want to leave this page?",
       );
 
       if (confirmExit) {
@@ -1047,7 +1058,7 @@ export function FormBuilder({
         navigationBlocker.reset?.();
       }
     }
-  }, [navigationBlocker]);
+  }, [navigationBlocker, schema]);
 
   useEffect(() => {
     if (activeEditor !== "form" && isPreviewMode) {
